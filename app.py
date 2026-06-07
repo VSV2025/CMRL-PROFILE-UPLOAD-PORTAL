@@ -5,7 +5,8 @@ from flask import (
     Flask,
     request,
     jsonify,
-    render_template
+    render_template,
+    send_from_directory
 )
 
 from werkzeug.utils import secure_filename
@@ -89,31 +90,54 @@ def submit():
             company_name=company_name,
             email=email,
             contact_no=contact_no,
-            pdf_path=filepath
+            pdf_path=filename
         )
 
         db.session.add(submission)
         db.session.commit()
 
         return """
-        <h2 style='color:green;text-align:center;'>
-            Submission Successful!
-        </h2>
+        <html>
+        <body style="font-family:Arial;text-align:center;padding-top:80px;">
+            <h2 style="color:green;">
+                Submission Successful!
+            </h2>
 
-        <p style='text-align:center;'>
-            Your company profile has been uploaded successfully.
-        </p>
+            <p>
+                Your company profile has been uploaded successfully.
+            </p>
 
-        <div style='text-align:center;'>
-            <a href='/'>Go Back</a>
-        </div>
+            <br>
+
+            <a href="/">
+                Submit Another Profile
+            </a>
+        </body>
+        </html>
         """
 
     except Exception as e:
+
         return f"""
-        <h2 style='color:red;'>Error Occurred</h2>
-        <pre>{str(e)}</pre>
+        <html>
+        <body style="font-family:Arial;padding:30px;">
+            <h2 style="color:red;">
+                Error Occurred
+            </h2>
+
+            <pre>{str(e)}</pre>
+        </body>
+        </html>
         """, 500
+
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename
+    )
 
 
 @app.route("/admin/submissions")
@@ -126,12 +150,13 @@ def submissions():
     result = []
 
     for item in data:
+
         result.append({
             "id": item.id,
             "company_name": item.company_name,
             "email": item.email,
             "contact_no": item.contact_no,
-            "pdf_path": item.pdf_path,
+            "pdf_link": f"/uploads/{item.pdf_path}",
             "created_at": str(item.created_at)
         })
 
@@ -139,6 +164,7 @@ def submissions():
 
 
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=5000,
