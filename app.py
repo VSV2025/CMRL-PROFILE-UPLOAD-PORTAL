@@ -23,7 +23,7 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-# Create uploads folder automatically
+# Create uploads folder
 os.makedirs(
     app.config["UPLOAD_FOLDER"],
     exist_ok=True
@@ -34,9 +34,8 @@ ALLOWED_EXTENSIONS = {"pdf"}
 
 def allowed_file(filename):
     return (
-        "." in filename
-        and filename.rsplit(".", 1)[1].lower()
-        in ALLOWED_EXTENSIONS
+        "." in filename and
+        filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
 
@@ -53,6 +52,7 @@ def submit():
         company_name = request.form.get("company_name")
         email = request.form.get("email")
         contact_no = request.form.get("contact_number")
+
         pdf = request.files.get("company_profile")
 
         if not company_name:
@@ -74,9 +74,9 @@ def submit():
             return "Only PDF files are allowed", 400
 
         filename = (
-            str(uuid.uuid4())
-            + "_"
-            + secure_filename(pdf.filename)
+            str(uuid.uuid4()) +
+            "_" +
+            secure_filename(pdf.filename)
         )
 
         filepath = os.path.join(
@@ -98,16 +98,14 @@ def submit():
 
         return """
         <html>
-        <body style="font-family:Arial;text-align:center;padding-top:80px;">
-            <h2 style="color:green;">
+        <body style="font-family:Arial;text-align:center;padding-top:100px;">
+            <h1 style="color:green;">
                 Submission Successful!
-            </h2>
+            </h1>
 
             <p>
                 Your company profile has been uploaded successfully.
             </p>
-
-            <br>
 
             <a href="/">
                 Submit Another Profile
@@ -122,7 +120,7 @@ def submit():
         <html>
         <body style="font-family:Arial;padding:30px;">
             <h2 style="color:red;">
-                Error Occurred
+                Internal Server Error
             </h2>
 
             <pre>{str(e)}</pre>
@@ -131,7 +129,7 @@ def submit():
         """, 500
 
 
-@app.route("/uploads/<path:filename>")
+@app.route("/uploads/<filename>")
 def uploaded_file(filename):
 
     return send_from_directory(
@@ -151,16 +149,29 @@ def submissions():
 
     for item in data:
 
+        pdf_url = (
+            request.host_url.rstrip("/")
+            + "/uploads/"
+            + item.pdf_path
+        )
+
         result.append({
             "id": item.id,
             "company_name": item.company_name,
             "email": item.email,
             "contact_no": item.contact_no,
-            "pdf_link": f"/uploads/{item.pdf_path}",
+            "pdf_url": pdf_url,
             "created_at": str(item.created_at)
         })
 
     return jsonify(result)
+
+
+@app.route("/health")
+def health():
+    return {
+        "status": "running"
+    }
 
 
 if __name__ == "__main__":
