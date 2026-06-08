@@ -19,11 +19,9 @@ app.config.from_object(Config)
 
 db.init_app(app)
 
-# Create database tables
 with app.app_context():
     db.create_all()
 
-# Create uploads folder
 os.makedirs(
     app.config["UPLOAD_FOLDER"],
     exist_ok=True
@@ -34,8 +32,8 @@ ALLOWED_EXTENSIONS = {"pdf"}
 
 def allowed_file(filename):
     return (
-        "." in filename and
-        filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
 
 
@@ -74,9 +72,9 @@ def submit():
             return "Only PDF files are allowed", 400
 
         filename = (
-            str(uuid.uuid4()) +
-            "_" +
-            secure_filename(pdf.filename)
+            str(uuid.uuid4())
+            + "_"
+            + secure_filename(pdf.filename)
         )
 
         filepath = os.path.join(
@@ -90,7 +88,7 @@ def submit():
             company_name=company_name,
             email=email,
             contact_no=contact_no,
-            pdf_path=filename
+            pdf_link=filename
         )
 
         db.session.add(submission)
@@ -107,6 +105,8 @@ def submit():
                 Your company profile has been uploaded successfully.
             </p>
 
+            <br>
+
             <a href="/">
                 Submit Another Profile
             </a>
@@ -120,7 +120,7 @@ def submit():
         <html>
         <body style="font-family:Arial;padding:30px;">
             <h2 style="color:red;">
-                Internal Server Error
+                Error Occurred
             </h2>
 
             <pre>{str(e)}</pre>
@@ -152,7 +152,7 @@ def submissions():
         pdf_url = (
             request.host_url.rstrip("/")
             + "/uploads/"
-            + item.pdf_path
+            + item.pdf_link
         )
 
         result.append({
@@ -169,9 +169,7 @@ def submissions():
 
 @app.route("/health")
 def health():
-    return {
-        "status": "running"
-    }
+    return {"status": "running"}
 
 
 if __name__ == "__main__":
